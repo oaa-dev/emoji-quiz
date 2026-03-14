@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Emoji Quiz — TikTok Live</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0f;--surface:#12121c;--surface2:#1a1a28;--border:#252535;
+    --text:#eeeef4;--text2:#8888a0;--pink:#fe2c55;--orange:#ff6f3c;
+    --green:#00c853;--red:#ff1744;--gold:#ffd740;--cyan:#00e5ff;
+    --blue:#448aff;--purple:#b388ff;
+    --gradient:linear-gradient(135deg,var(--pink),var(--orange));
+    --radius:12px;
+  }
+  html,body{height:100%;overflow:hidden}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);display:grid;grid-template-columns:1fr 280px;height:100vh}
+
+  /* ── Left column ── */
+  .left-col{display:flex;flex-direction:column;overflow:hidden}
+  .info-bar{display:flex;gap:6px;padding:8px 16px;flex-shrink:0;flex-wrap:wrap;align-items:center}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:#555;transition:all .3s}
+  .conn-dot.connected{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .conn-label{font-size:.65rem;color:var(--text2)}
+  .gear-btn{background:none;border:none;color:var(--text2);font-size:1.1rem;cursor:pointer;opacity:.7;transition:opacity .2s;padding:2px}
+  .gear-btn:hover{opacity:1}
+  .info-chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:.7rem;color:var(--text2);display:flex;align-items:center;gap:4px;white-space:nowrap}
+  .info-chip .val{color:var(--text);font-weight:700}
+  .chip-cat .val{color:var(--cyan)}
+  .chip-diff .val{text-transform:capitalize}
+  .chip-diff.easy .val{color:var(--green)}
+  .chip-diff.medium .val{color:var(--gold)}
+  .chip-diff.hard .val{color:var(--red)}
+  .puzzle-panel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:16px;min-width:0}
+  .emoji-display{font-size:4rem;text-align:center;line-height:1.3;user-select:none;animation:emojiIn .5s ease}
+  @keyframes emojiIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+  .blanks-display{font-family:'Courier New',monospace;font-size:1.4rem;font-weight:800;letter-spacing:4px;color:var(--cyan);text-align:center;min-height:2rem;word-break:break-all}
+  .word-hint{font-size:.7rem;color:var(--text2)}
+  .timer-display{font-size:1.8rem;font-weight:800;color:var(--text2);font-family:'Courier New',monospace;letter-spacing:2px}
+
+  /* ── Right column (guesses + leaderboard) ── */
+  .right-col{border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow:hidden}
+  .guesses-section{flex:1;display:flex;flex-direction:column;min-height:0}
+  .guesses-header{font-size:.65rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;padding:10px 12px 6px;flex-shrink:0;border-bottom:1px solid var(--border)}
+  .guesses-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .guess-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);animation:guessIn .3s ease;font-size:.75rem;transition:opacity .5s,transform .5s}
+  @keyframes guessIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  .guess-item.fading{opacity:0;transform:translateX(-10px)}
+  .guess-item.correct-guess{border-color:var(--green);background:rgba(0,200,83,.12)}
+  .guess-item.correct-guess .guess-text{color:var(--green);font-weight:800}
+  .guess-avatar{width:22px;height:22px;border-radius:50%;background:var(--border);object-fit:cover;flex-shrink:0}
+  .guess-user{color:var(--text2);font-weight:600;flex-shrink:0;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .guess-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .guess-score{color:var(--green);font-weight:800;font-size:.7rem;flex-shrink:0}
+  .guesses-empty{text-align:center;color:var(--text2);padding:20px 10px;font-size:.75rem}
+
+  /* ── Winner banner ── */
+  .winner-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:var(--surface);border:2px solid var(--green);border-radius:20px;padding:24px 36px;z-index:800;text-align:center;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+  .winner-banner.active{transform:translate(-50%,-50%) scale(1)}
+  .winner-emoji{font-size:2rem;margin-bottom:8px}
+  .winner-label{font-size:.7rem;color:var(--green);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:4px}
+  .winner-name{font-size:1.3rem;font-weight:800;margin-bottom:2px}
+  .winner-answer{font-size:.85rem;color:var(--cyan);font-weight:600;margin-bottom:4px}
+  .winner-pts{font-size:1rem;font-weight:800;color:var(--gold)}
+
+  /* ── Leaderboard ── */
+  .lb-wrap{flex:1;border-top:1px solid var(--border);display:flex;flex-direction:column;padding:0 8px 8px;min-height:0;overflow:hidden}
+  .lb-header{font-size:.65rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;padding:8px 4px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+  .lb-list{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;display:flex;flex-direction:column;gap:4px}
+  .lb-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);animation:slideIn .3s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .lb-item.top-1{border-color:rgba(255,215,64,.4);background:linear-gradient(135deg,rgba(255,215,64,.08),rgba(255,215,64,.02))}
+  .lb-item.top-2{border-color:rgba(192,192,192,.3);background:rgba(192,192,192,.04)}
+  .lb-item.top-3{border-color:rgba(205,127,50,.3);background:rgba(205,127,50,.04)}
+  .lb-pos{font-size:.75rem;font-weight:800;min-width:22px;text-align:center;color:var(--text2)}
+  .top-1 .lb-pos{color:var(--gold)}
+  .top-2 .lb-pos{color:#c0c0c0}
+  .top-3 .lb-pos{color:#cd7f32}
+  .lb-avatar{width:26px;height:26px;border-radius:50%;background:var(--surface2);object-fit:cover;flex-shrink:0;border:2px solid var(--border)}
+  .top-1 .lb-avatar{border-color:var(--gold)}
+  .lb-details{flex:1;min-width:0}
+  .lb-username{font-size:.7rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lb-meta{font-size:.55rem;color:var(--text2);display:flex;gap:8px}
+  .lb-score{font-size:.75rem;font-weight:800;color:var(--cyan);min-width:40px;text-align:right}
+  .lb-streak{font-size:.55rem;color:var(--orange);font-weight:700}
+  .lb-empty{text-align:center;color:var(--text2);padding:16px 10px;font-size:.75rem}
+
+  /* ── Results overlay ── */
+  .results-banner{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--green);padding:12px 16px;z-index:700;transform:translateY(100%);transition:transform .3s ease;display:flex;flex-direction:column;gap:6px}
+  .results-banner.active{transform:translateY(0)}
+  .results-header{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:700}
+  .results-header .emoji{font-size:1.1rem}
+  .results-answer{color:var(--cyan);font-weight:800}
+  .results-stats{font-size:.7rem;color:var(--text2)}
+
+  /* ── Streak notification ── */
+  .streak-notif{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--orange),var(--pink));color:#fff;padding:8px 20px;border-radius:20px;font-size:.8rem;font-weight:700;z-index:800;animation:streakIn .4s ease,streakOut .4s ease 2.5s forwards;pointer-events:none;white-space:nowrap}
+  @keyframes streakIn{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  @keyframes streakOut{to{opacity:0;transform:translateX(-50%) translateY(-20px)}}
+
+  /* ── Settings Modal ── */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.active{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:380px;animation:slideIn .25s ease;position:relative}
+  .modal-title{font-size:1rem;font-weight:800;margin-bottom:16px;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .modal-group{margin-bottom:14px}
+  .modal-label{font-size:.65rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .modal-row{display:flex;gap:6px}
+  .modal-input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:.85rem;outline:none}
+  .modal-input:focus{border-color:var(--pink)}
+  .modal-input::placeholder{color:var(--text2)}
+  .btn{padding:8px 16px;border:none;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.5px}
+  .btn:active{transform:scale(.96)}
+  .btn-primary{background:var(--gradient);color:#fff}
+  .btn-danger{background:#cc2244;color:#fff}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .modal-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .modal-actions .btn{flex:1;min-width:0}
+  .modal-status{font-size:.7rem;color:var(--text2);margin-top:6px;text-align:center}
+  .modal-close{position:absolute;top:12px;right:16px;background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer}
+
+  /* ── Confetti ── */
+  #confetti{position:fixed;inset:0;pointer-events:none;z-index:1001}
+
+  /* ── Responsive ── */
+  @media(max-width:600px){
+    body{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+    .right-col{border-left:none;border-top:1px solid var(--border)}
+    .emoji-display{font-size:3rem}
+    .blanks-display{font-size:1.1rem}
+    .puzzle-panel{padding:12px}
+  }
+</style>
+</head>
+<body>
+
+<!-- Left column: info + puzzle -->
+<div class="left-col">
+  <div class="info-bar">
+    <button class="gear-btn" onclick="toggleSettings()">&#9881;</button>
+    <div class="conn-dot" id="connDot"></div>
+    <span class="conn-label" id="connLabel">Disconnected</span>
+    <div class="info-chip"><span>Q</span> <span class="val" id="chipQuestion">0</span></div>
+    <div class="info-chip chip-cat"><span>Category</span> <span class="val" id="chipCategory">-</span></div>
+    <div class="info-chip chip-diff" id="chipDifficulty"><span>Difficulty</span> <span class="val" id="chipDiffVal">-</span></div>
+  </div>
+  <div class="puzzle-panel">
+    <div class="emoji-display" id="emojiDisplay">🎯❓</div>
+    <div class="blanks-display" id="blanksDisplay">_ _ _ _ _</div>
+    <div class="word-hint" id="wordHint">Type your guess in chat!</div>
+    <div class="timer-display" id="timerDisplay">00:00</div>
+  </div>
+</div>
+
+<!-- Right column: guesses + leaderboard -->
+<div class="right-col">
+  <div class="guesses-section">
+    <div class="guesses-header">Live Guesses</div>
+    <div class="guesses-list" id="guessesList">
+      <div class="guesses-empty">Waiting for guesses...</div>
+    </div>
+  </div>
+  <div class="lb-wrap">
+    <div class="lb-header">
+      <span>&#127942; Leaderboard</span>
+      <span id="lbPlayerCount"></span>
+    </div>
+    <div class="lb-list" id="lbList">
+      <div class="lb-empty">Guess correctly to join the leaderboard!</div>
+    </div>
+  </div>
+</div>
+
+<!-- Winner banner -->
+<div class="winner-banner" id="winnerBanner">
+  <div class="winner-emoji">&#127881;&#127881;&#127881;</div>
+  <div class="winner-label">First to guess!</div>
+  <div class="winner-name" id="winnerName">-</div>
+  <div class="winner-answer" id="winnerAnswer">-</div>
+  <div class="winner-pts" id="winnerPts">-</div>
+</div>
+
+<!-- Results banner -->
+<div class="results-banner" id="resultsBanner">
+  <div class="results-header">
+    <span class="emoji" id="resultsEmoji">-</span>
+    <span>=</span>
+    <span class="results-answer" id="resultsAnswer">-</span>
+  </div>
+  <div class="results-stats" id="resultsStats"></div>
+</div>
+
+<!-- Confetti -->
+<canvas id="confetti"></canvas>
+
+<!-- Settings modal -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <button class="modal-close" onclick="toggleSettings()">&times;</button>
+    <div class="modal-title">Settings</div>
+
+    <div class="modal-group">
+      <div class="modal-label">TikTok Username</div>
+      <div class="modal-row">
+        <input class="modal-input" type="text" id="usernameInput" placeholder="username" autocomplete="off"
+          onkeydown="if(event.key==='Enter')doConnect()">
+      </div>
+      <div class="modal-actions" style="margin-top:6px">
+        <button class="btn btn-primary" id="connectBtn" onclick="doConnect()">Connect</button>
+        <button class="btn btn-danger" id="disconnectBtn" onclick="doDisconnect()" disabled>Disconnect</button>
+      </div>
+      <div class="modal-status" id="connStatus">Not connected</div>
+    </div>
+
+    <div class="modal-group">
+      <div class="modal-label">Game Controls</div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="doNewGame()">New Game</button>
+        <button class="btn btn-secondary" onclick="doSkip()">Skip Puzzle</button>
+        <button class="btn btn-secondary" onclick="doHint()">Give Hint</button>
+      </div>
+    </div>
+
+    <div class="modal-group">
+      <div class="modal-label">Test Guess (player:guess)</div>
+      <div class="modal-row">
+        <input class="modal-input" type="text" id="manualInput" placeholder="bob:lion king" autocomplete="off"
+          onkeydown="if(event.key==='Enter')sendManual()">
+        <button class="btn btn-primary" onclick="sendManual()">Go</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────
+let guessElements = [];
+let timerInterval = null;
+let timerSeconds = 0;
+const MAX_VISIBLE_GUESSES = 8;
+
+// ── WebSocket ────────────────────────────────────────────────────────────
+const WS_URL = window.location.hostname === 'localhost'
+  ? `ws://localhost:${window.location.port || 8080}`
+  : `wss://${window.location.host}`;
+let ws = null, reconnTimer = null;
+
+function wsConnect() {
+  if (ws && ws.readyState <= 1) return;
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => clearTimeout(reconnTimer);
+  ws.onclose = () => { reconnTimer = setTimeout(wsConnect, 2000); };
+  ws.onerror = () => {};
+  ws.onmessage = (e) => { try { handle(JSON.parse(e.data)); } catch(er) { console.error(er); } };
+}
+function wsSend(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+
+// ── Message handler ──────────────────────────────────────────────────────
+function handle(msg) {
+  switch (msg.type) {
+    case 'init':
+      setConn(msg.connected, msg.username);
+      renderLB(msg.leaderboard);
+      if (msg.gameState === 'puzzle' && msg.currentPuzzle) {
+        showPuzzle({
+          puzzleNumber: msg.puzzleNumber,
+          emojis: msg.currentPuzzle.emojis,
+          category: msg.currentPuzzle.category,
+          difficulty: msg.currentPuzzle.difficulty,
+          blanks: msg.currentPuzzle.blanks,
+          letterCount: msg.currentPuzzle.letterCount,
+          wordCount: msg.currentPuzzle.wordCount,
+        });
+        startTimer(Math.round(msg.timeRemaining || 0));
+        // Restore recent guesses
+        if (msg.recentGuesses) {
+          clearGuesses();
+          for (const g of msg.recentGuesses) {
+            addGuessToFeed(g);
+          }
+        }
+      }
+      break;
+
+    case 'status':
+      setConn(msg.status === 'connected', msg.username);
+      break;
+
+    case 'puzzle':
+      showPuzzle(msg);
+      clearGuesses();
+      hideResultsBanner();
+      hideWinnerBanner();
+      startTimer(msg.timeLimit || 600);
+      break;
+
+    case 'hint':
+      el('blanksDisplay').textContent = msg.blanks;
+      el('wordHint').textContent = `${msg.revealedCount}/${msg.totalLetters} letters revealed`;
+      break;
+
+    case 'guess':
+      addGuessToFeed(msg);
+      break;
+
+    case 'winner':
+      stopTimer();
+      showWinnerBanner(msg);
+      launchConfetti();
+      break;
+
+    case 'roundEnd':
+      renderLB(msg.leaderboard);
+      break;
+
+    case 'reveal':
+      stopTimer();
+      el('blanksDisplay').textContent = msg.answer.toUpperCase();
+      el('wordHint').textContent = 'Nobody got it! Answer: ' + msg.answer;
+      break;
+
+    case 'leaderboardUpdate':
+      renderLB(msg.leaderboard);
+      break;
+
+    case 'streak':
+      showStreakNotif(msg.nickname || msg.username, msg.streak);
+      break;
+
+    case 'newGame':
+      stopTimer();
+      hideResultsBanner();
+      hideWinnerBanner();
+      clearGuesses();
+      el('emojiDisplay').textContent = '🎯❓';
+      el('blanksDisplay').textContent = '_ _ _ _ _';
+      el('wordHint').textContent = 'New game starting...';
+      el('chipQuestion').textContent = '0';
+      el('chipCategory').textContent = '-';
+      el('chipDiffVal').textContent = '-';
+      el('lbList').innerHTML = '<div class="lb-empty">Guess correctly to join the leaderboard!</div>';
+      break;
+
+    case 'gift':
+    case 'viewerCount':
+      break;
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function setConn(on, user) {
+  el('connDot').classList.toggle('connected', on);
+  el('connLabel').textContent = on ? `@${user}` : 'Disconnected';
+  el('connectBtn').disabled = on;
+  el('disconnectBtn').disabled = !on;
+  el('connStatus').textContent = on ? `Connected to @${user}` : 'Not connected';
+  if (on && user) el('usernameInput').value = user;
+}
+
+// ── Puzzle display ──────────────────────────────────────────────────────
+function showPuzzle(msg) {
+  el('chipQuestion').textContent = msg.puzzleNumber;
+  el('chipCategory').textContent = msg.category;
+  el('chipDiffVal').textContent = msg.difficulty;
+  const diffChip = el('chipDifficulty');
+  diffChip.className = 'info-chip chip-diff ' + msg.difficulty;
+
+  el('emojiDisplay').textContent = msg.emojis;
+  // Re-trigger animation
+  el('emojiDisplay').style.animation = 'none';
+  el('emojiDisplay').offsetHeight; // reflow
+  el('emojiDisplay').style.animation = '';
+
+  el('blanksDisplay').textContent = msg.blanks;
+  const wordText = msg.wordCount > 1 ? `${msg.wordCount} words, ${msg.letterCount} letters` : `${msg.letterCount} letters`;
+  el('wordHint').textContent = wordText + ' — Type your guess in chat!';
+}
+
+// ── Timer ────────────────────────────────────────────────────────────────
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+
+function startTimer(seconds) {
+  stopTimer();
+  timerSeconds = Math.max(0, Math.round(seconds));
+  el('timerDisplay').textContent = formatTime(timerSeconds);
+  timerInterval = setInterval(() => {
+    timerSeconds--;
+    if (timerSeconds < 0) { stopTimer(); return; }
+    el('timerDisplay').textContent = formatTime(timerSeconds);
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+// ── Guesses feed ────────────────────────────────────────────────────────
+function clearGuesses() {
+  guessElements = [];
+  el('guessesList').innerHTML = '<div class="guesses-empty">Waiting for guesses...</div>';
+}
+
+function addGuessToFeed(msg) {
+  const list = el('guessesList');
+  // Remove empty placeholder
+  const empty = list.querySelector('.guesses-empty');
+  if (empty) empty.remove();
+
+  const item = document.createElement('div');
+  item.className = 'guess-item' + (msg.correct ? ' correct-guess' : '');
+
+  const avatarHtml = msg.profilePic
+    ? `<img class="guess-avatar" src="${esc(msg.profilePic)}" alt="" onerror="this.style.display='none'">`
+    : '<div class="guess-avatar"></div>';
+
+  item.innerHTML = `
+    ${avatarHtml}
+    <span class="guess-user">@${esc(msg.nickname || msg.username)}</span>
+    <span class="guess-text">${esc(msg.guess)}</span>
+    ${msg.correct ? `<span class="guess-score">+${msg.score}</span>` : ''}
+  `;
+
+  list.appendChild(item);
+  guessElements.push(item);
+
+  // Auto-scroll
+  list.scrollTop = list.scrollHeight;
+
+  // Fade out wrong guesses after 3s
+  if (!msg.correct) {
+    setTimeout(() => {
+      item.classList.add('fading');
+      setTimeout(() => {
+        if (item.parentNode) item.remove();
+        const idx = guessElements.indexOf(item);
+        if (idx > -1) guessElements.splice(idx, 1);
+      }, 500);
+    }, 3000);
+  }
+
+  // Keep max visible
+  while (guessElements.length > MAX_VISIBLE_GUESSES) {
+    const old = guessElements.shift();
+    if (old.parentNode) old.remove();
+  }
+}
+
+// ── Winner banner ──────────────────────────────────────────────────────
+function showWinnerBanner(msg) {
+  el('winnerName').textContent = msg.nickname || msg.username;
+  el('winnerAnswer').textContent = msg.answer;
+  el('winnerPts').textContent = `+${msg.score} pts`;
+  el('winnerBanner').classList.add('active');
+  setTimeout(() => hideWinnerBanner(), 4000);
+}
+
+function hideWinnerBanner() {
+  el('winnerBanner').classList.remove('active');
+}
+
+// ── Round end ──────────────────────────────────────────────────────────
+function showRoundEnd(msg) {
+  el('resultsEmoji').textContent = msg.emojis;
+  el('resultsAnswer').textContent = msg.answer;
+  el('resultsStats').textContent = `${msg.correctCount} player${msg.correctCount !== 1 ? 's' : ''} guessed correctly`;
+  el('resultsBanner').classList.add('active');
+}
+
+function hideResultsBanner() {
+  el('resultsBanner').classList.remove('active');
+}
+
+// ── Leaderboard ──────────────────────────────────────────────────────────
+function renderLB(lb) {
+  const list = el('lbList');
+  if (!lb || !lb.length) {
+    list.innerHTML = '<div class="lb-empty">Guess correctly to join the leaderboard!</div>';
+    el('lbPlayerCount').textContent = '';
+    return;
+  }
+
+  el('lbPlayerCount').textContent = `${lb.length} players`;
+
+  list.innerHTML = lb.slice(0, 10).map((e, i) => {
+    const topCls = i < 3 ? ` top-${i+1}` : '';
+    const streakText = e.streak >= 3 ? `<span class="lb-streak">&#128293; ${e.streak}</span>` : '';
+    return `<div class="lb-item${topCls}">
+      <div class="lb-pos">${i+1}</div>
+      ${e.profilePic ? `<img class="lb-avatar" src="${esc(e.profilePic)}" alt="" onerror="this.style.display='none'">` : '<div class="lb-avatar"></div>'}
+      <div class="lb-details">
+        <div class="lb-username">${esc(e.nickname || e.username)}</div>
+        <div class="lb-meta">
+          <span>${e.correct} correct</span>
+          ${streakText}
+        </div>
+      </div>
+      <div class="lb-score">${e.score}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Streak notification ──────────────────────────────────────────────────
+function showStreakNotif(name, streak) {
+  const div = document.createElement('div');
+  div.className = 'streak-notif';
+  div.textContent = `🔥 ${name} is on a ${streak}-answer streak!`;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+// ── Confetti ─────────────────────────────────────────────────────────────
+function launchConfetti() {
+  const c = el('confetti'), ctx = c.getContext('2d');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  const colors = ['#fe2c55','#ff6f3c','#ffd740','#00e5ff','#00c853','#e040fb','#b388ff'];
+  const ps = Array.from({length:100}, () => ({
+    x: Math.random() * c.width,
+    y: Math.random() * c.height - c.height,
+    w: Math.random() * 8 + 3,
+    h: Math.random() * 5 + 2,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    vx: (Math.random() - .5) * 5,
+    vy: Math.random() * 3 + 2,
+    rot: Math.random() * 360,
+    vr: (Math.random() - .5) * 12
+  }));
+  let f = 0;
+  (function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    let alive = false;
+    for (const p of ps) {
+      p.x += p.vx; p.y += p.vy; p.vy += .04; p.rot += p.vr;
+      if (p.y < c.height + 20) alive = true;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+    }
+    if (alive && ++f < 200) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, c.width, c.height);
+  })();
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────
+function doConnect() {
+  const username = el('usernameInput').value.trim();
+  if (!username) return;
+  wsSend({ action: 'connect', username });
+}
+
+function doDisconnect() { wsSend({ action: 'disconnect' }); }
+function doNewGame() { wsSend({ action: 'newGame' }); }
+function doSkip() { wsSend({ action: 'skip' }); }
+function doHint() { wsSend({ action: 'hint' }); }
+
+function sendManual() {
+  const input = el('manualInput');
+  const val = input.value.trim();
+  if (!val) return;
+  input.value = '';
+  let player = 'host', text = val;
+  if (val.includes(':')) {
+    const idx = val.indexOf(':');
+    player = val.slice(0, idx).trim() || 'host';
+    text = val.slice(idx + 1).trim();
+  }
+  if (text) {
+    wsSend({ action: 'guess', player, text });
+  }
+}
+
+function toggleSettings() {
+  el('settingsModal').classList.toggle('active');
+}
+el('settingsModal').addEventListener('click', (e) => {
+  if (e.target === el('settingsModal')) toggleSettings();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────
+wsConnect();
+</script>
+</body>
+</html>

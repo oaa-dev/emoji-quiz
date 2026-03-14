@@ -1,0 +1,14 @@
+{
+  "name": "tiktok-live-emoji-quiz",
+  "version": "1.0.0",
+  "description": "TikTok Live Emoji Quiz game — guess the movie/word/phrase from emojis",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "tiktok-live-connector": "^1.1.8",
+    "ws": "^8.18.0"
+  }
+}
