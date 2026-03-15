@@ -61,17 +61,45 @@ function checkAnswer(guess, puzzle) {
 }
 
 // ── HTTP server ──────────────────────────────────────────────────────────
+const MIME_TYPES = {
+  '.html': 'text/html',
+  '.js':   'application/javascript',
+  '.json': 'application/json',
+  '.svg':  'image/svg+xml',
+  '.png':  'image/png',
+  '.ico':  'image/x-icon',
+};
+
 const httpServer = http.createServer((req, res) => {
-  if (req.url === '/' || req.url === '/overlay.html') {
+  const url = req.url.split('?')[0];
+
+  if (url === '/' || url === '/overlay.html') {
     fs.readFile(path.join(__dirname, 'overlay.html'), (err, data) => {
       if (err) { res.writeHead(500); res.end('Error loading overlay'); return; }
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(data);
     });
-  } else {
-    res.writeHead(404);
-    res.end('Not found');
+    return;
   }
+
+  // Serve static files: manifest.json, sw.js, icons/*
+  const safePath = path.normalize(url).replace(/^(\.\.[\/\\])+/, '');
+  const filePath = path.join(__dirname, safePath);
+
+  // Only serve known static files
+  if (['/manifest.json', '/sw.js'].includes(url) || url.startsWith('/icons/')) {
+    const ext = path.extname(filePath);
+    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    fs.readFile(filePath, (err, data) => {
+      if (err) { res.writeHead(404); res.end('Not found'); return; }
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(data);
+    });
+    return;
+  }
+
+  res.writeHead(404);
+  res.end('Not found');
 });
 
 // ── WebSocket server ─────────────────────────────────────────────────────

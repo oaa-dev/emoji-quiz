@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Emoji Quiz — TikTok Live</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#fe2c55">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Emoji Quiz">
+<link rel="apple-touch-icon" href="/icons/icon-192.svg">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -587,6 +593,11 @@ function toggleSettings() {
 el('settingsModal').addEventListener('click', (e) => {
   if (e.target === el('settingsModal')) toggleSettings();
 });
+
+// ── PWA Service Worker ───────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
 
 // ── Init ─────────────────────────────────────────────────────────────────
 wsConnect();
