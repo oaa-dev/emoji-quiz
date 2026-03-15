@@ -123,7 +123,10 @@ async function connectTikTok(username) {
   }
 
   LOG.info(`Connecting to TikTok Live: @${username}`);
-  tiktokConnection = new WebcastPushConnection(username);
+  tiktokConnection = new WebcastPushConnection(username, {
+    fetchRoomInfoOnConnect: true,
+    requestOptions: { timeout: 30000 },
+  });
 
   try {
     const state = await tiktokConnection.connect();
@@ -180,8 +183,19 @@ async function connectTikTok(username) {
   } catch (err) {
     const errMsg = err?.message || err?.toString() || String(err);
     LOG.error(`Failed to connect: ${errMsg}`);
-    broadcast({ type: 'status', status: 'error', message: errMsg });
     tiktokConnection = null;
+
+    // Auto-retry up to 3 times for timeout errors
+    if (!connectTikTok._retries) connectTikTok._retries = 0;
+    if (errMsg.includes('timeout') && connectTikTok._retries < 3) {
+      connectTikTok._retries++;
+      LOG.warn(`Retrying connection (${connectTikTok._retries}/3) in 5s...`);
+      broadcast({ type: 'status', status: 'error', message: `Retrying (${connectTikTok._retries}/3)...` });
+      setTimeout(() => connectTikTok(username), 5000);
+    } else {
+      connectTikTok._retries = 0;
+      broadcast({ type: 'status', status: 'error', message: errMsg });
+    }
   }
 }
 
