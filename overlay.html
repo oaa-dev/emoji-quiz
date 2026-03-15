@@ -43,7 +43,7 @@
   @keyframes emojiIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
   .blanks-display{font-family:'Courier New',monospace;font-size:1.4rem;font-weight:800;letter-spacing:4px;color:var(--cyan);text-align:center;min-height:2rem;word-break:break-all}
   .word-hint{font-size:.7rem;color:var(--text2)}
-  .timer-display{font-size:1.8rem;font-weight:800;color:var(--text2);font-family:'Courier New',monospace;letter-spacing:2px}
+  .chip-timer .val{font-family:'Courier New',monospace;letter-spacing:1px}
 
   /* ── Right column (guesses + leaderboard) ── */
   .right-col{border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow:hidden}
@@ -105,6 +105,14 @@
   @keyframes streakIn{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
   @keyframes streakOut{to{opacity:0;transform:translateX(-50%) translateY(-20px)}}
 
+  /* ── Join notification ── */
+  .join-notif{position:fixed;bottom:20px;left:20px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 14px;z-index:800;animation:joinIn .3s ease,joinOut .4s ease 2.5s forwards;pointer-events:none;max-width:280px}
+  @keyframes joinIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes joinOut{to{opacity:0;transform:translateX(-20px)}}
+  .join-notif-avatar{width:24px;height:24px;border-radius:50%;background:var(--surface2);object-fit:cover;flex-shrink:0;border:2px solid var(--cyan)}
+  .join-notif-text{font-size:.7rem;color:var(--text2)}.join-notif-text strong{color:var(--cyan);font-weight:700}
+  .join-notif-icon{font-size:.9rem;flex-shrink:0}
+
   /* ── Settings Modal ── */
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;display:none;align-items:center;justify-content:center;padding:20px}
   .modal-bg.active{display:flex}
@@ -127,6 +135,49 @@
   .modal-status{font-size:.7rem;color:var(--text2);margin-top:6px;text-align:center}
   .modal-close{position:absolute;top:12px;right:16px;background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer}
 
+  /* ── How to Play CTA ── */
+  .cta-bar{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 16px;flex-shrink:0}
+  .cta-title{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:ctaPulse 2s ease-in-out infinite}
+  @keyframes ctaPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.8;transform:scale(1.05)}}
+  .cta-commands{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .cmd-badge{display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;font-size:.7rem;font-weight:700;border:1px solid var(--border);background:var(--surface);transition:all .3s;animation:badgeFloat 3s ease-in-out infinite}
+  .cmd-badge:nth-child(1){animation-delay:0s}
+  .cmd-badge:nth-child(2){animation-delay:.5s}
+  .cmd-badge:nth-child(3){animation-delay:1s}
+  @keyframes badgeFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .cmd-badge .cmd-icon{font-size:.9rem}
+  .cmd-badge .cmd-key{color:var(--cyan);font-family:'Courier New',monospace;background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:.65rem}
+  .cmd-badge .cmd-desc{color:var(--text2)}
+  .cmd-badge.cmd-guess{border-color:var(--green);background:rgba(0,200,83,.08)}
+  .cmd-badge.cmd-guess .cmd-key{color:var(--green)}
+  .cmd-badge.cmd-hint{border-color:var(--gold);background:rgba(255,215,64,.06)}
+  .cmd-badge.cmd-hint .cmd-key{color:var(--gold)}
+  .cmd-badge.cmd-skip{border-color:var(--pink);background:rgba(254,44,85,.06)}
+  .cmd-badge.cmd-skip .cmd-key{color:var(--pink)}
+
+  /* ── Join prompt (pulsing arrow) ── */
+  .join-prompt{display:flex;align-items:center;gap:6px;font-size:.65rem;color:var(--text2);animation:joinPulse 1.5s ease-in-out infinite}
+  @keyframes joinPulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .join-prompt .arrow{font-size:1rem;color:var(--pink)}
+
+  /* ── Floating emojis background ── */
+  .float-emojis{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .float-emoji{position:absolute;font-size:1.5rem;opacity:.06;animation:floatUp linear infinite;will-change:transform}
+  @keyframes floatUp{
+    0%{transform:translateY(100vh) rotate(0deg);opacity:0}
+    10%{opacity:.06}
+    90%{opacity:.06}
+    100%{transform:translateY(-10vh) rotate(360deg);opacity:0}
+  }
+
+  /* ── Participant counter ── */
+  .participants{display:flex;align-items:center;gap:4px;font-size:.6rem;color:var(--text2);padding:0 16px 4px}
+  .participants .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:liveDot 1.5s ease-in-out infinite}
+  @keyframes liveDot{0%,100%{opacity:1;box-shadow:0 0 4px var(--green)}50%{opacity:.4;box-shadow:none}}
+
+  /* Ensure main content is above floating emojis */
+  .left-col,.right-col{position:relative;z-index:1}
+
   /* ── Confetti ── */
   #confetti{position:fixed;inset:0;pointer-events:none;z-index:1001}
 
@@ -137,10 +188,15 @@
     .emoji-display{font-size:3rem}
     .blanks-display{font-size:1.1rem}
     .puzzle-panel{padding:12px}
+    .cta-commands{gap:4px}
+    .cmd-badge{padding:4px 10px;font-size:.6rem}
   }
 </style>
 </head>
 <body>
+
+<!-- Floating emojis background -->
+<div class="float-emojis" id="floatEmojis"></div>
 
 <!-- Left column: info + puzzle -->
 <div class="left-col">
@@ -151,12 +207,21 @@
     <div class="info-chip"><span>Q</span> <span class="val" id="chipQuestion">0</span></div>
     <div class="info-chip chip-cat"><span>Category</span> <span class="val" id="chipCategory">-</span></div>
     <div class="info-chip chip-diff" id="chipDifficulty"><span>Difficulty</span> <span class="val" id="chipDiffVal">-</span></div>
+    <div class="info-chip chip-timer"><span>⏱</span> <span class="val" id="timerDisplay">00:00</span></div>
   </div>
   <div class="puzzle-panel">
     <div class="emoji-display" id="emojiDisplay">🎯❓</div>
     <div class="blanks-display" id="blanksDisplay">_ _ _ _ _</div>
     <div class="word-hint" id="wordHint">Type your guess in chat!</div>
-    <div class="timer-display" id="timerDisplay">00:00</div>
+  </div>
+  <div class="cta-bar">
+    <div class="cta-title">Type in chat to play!</div>
+    <div class="cta-commands">
+      <div class="cmd-badge cmd-guess"><span class="cmd-icon">💬</span><span class="cmd-key">answer</span><span class="cmd-desc">to guess</span></div>
+      <div class="cmd-badge cmd-hint"><span class="cmd-icon">💡</span><span class="cmd-key">hint</span><span class="cmd-desc">for a letter</span></div>
+      <div class="cmd-badge cmd-skip"><span class="cmd-icon">⏭</span><span class="cmd-key">skip</span><span class="cmd-desc">next word</span></div>
+    </div>
+    <div class="join-prompt"><span class="arrow">👇</span> Comment below to join the game <span class="arrow">👇</span></div>
   </div>
 </div>
 
@@ -279,7 +344,7 @@ function handle(msg) {
           letterCount: msg.currentPuzzle.letterCount,
           wordCount: msg.currentPuzzle.wordCount,
         });
-        startTimer(Math.round(msg.timeRemaining || 0));
+        startTimer(msg.elapsedTime || 0);
         // Restore recent guesses
         if (msg.recentGuesses) {
           clearGuesses();
@@ -299,7 +364,7 @@ function handle(msg) {
       clearGuesses();
       hideResultsBanner();
       hideWinnerBanner();
-      startTimer(msg.timeLimit || 600);
+      startTimer(0);
       break;
 
     case 'hint':
@@ -324,7 +389,9 @@ function handle(msg) {
     case 'reveal':
       stopTimer();
       el('blanksDisplay').textContent = msg.answer.toUpperCase();
-      el('wordHint').textContent = 'Nobody got it! Answer: ' + msg.answer;
+      el('wordHint').textContent = msg.skippedBy
+        ? 'Skipped! Answer: ' + msg.answer
+        : 'Nobody got it! Answer: ' + msg.answer;
       break;
 
     case 'leaderboardUpdate':
@@ -347,6 +414,10 @@ function handle(msg) {
       el('chipCategory').textContent = '-';
       el('chipDiffVal').textContent = '-';
       el('lbList').innerHTML = '<div class="lb-empty">Guess correctly to join the leaderboard!</div>';
+      break;
+
+    case 'join':
+      showJoinNotif(msg.nickname, msg.profilePic);
       break;
 
     case 'gift':
@@ -384,7 +455,7 @@ function showPuzzle(msg) {
 
   el('blanksDisplay').textContent = msg.blanks;
   const wordText = msg.wordCount > 1 ? `${msg.wordCount} words, ${msg.letterCount} letters` : `${msg.letterCount} letters`;
-  el('wordHint').textContent = wordText + ' — Type your guess in chat!';
+  el('wordHint').textContent = wordText + ' — Type "hint" or "skip" in chat!';
 }
 
 // ── Timer ────────────────────────────────────────────────────────────────
@@ -394,13 +465,12 @@ function formatTime(s) {
   return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
 }
 
-function startTimer(seconds) {
+function startTimer(startFrom) {
   stopTimer();
-  timerSeconds = Math.max(0, Math.round(seconds));
+  timerSeconds = Math.max(0, Math.round(startFrom || 0));
   el('timerDisplay').textContent = formatTime(timerSeconds);
   timerInterval = setInterval(() => {
-    timerSeconds--;
-    if (timerSeconds < 0) { stopTimer(); return; }
+    timerSeconds++;
     el('timerDisplay').textContent = formatTime(timerSeconds);
   }, 1000);
 }
@@ -524,6 +594,33 @@ function showStreakNotif(name, streak) {
   setTimeout(() => div.remove(), 3000);
 }
 
+// ── Join notification ────────────────────────────────────────────────────
+let joinQueue = [];
+let joinShowing = false;
+
+function showJoinNotif(name, profilePic) {
+  joinQueue.push({ name, profilePic });
+  if (!joinShowing) processJoinQueue();
+}
+
+function processJoinQueue() {
+  if (joinQueue.length === 0) { joinShowing = false; return; }
+  joinShowing = true;
+  const { name, profilePic } = joinQueue.shift();
+  const div = document.createElement('div');
+  div.className = 'join-notif';
+  const avatarHtml = profilePic
+    ? `<img class="join-notif-avatar" src="${esc(profilePic)}" alt="" onerror="this.style.display='none'">`
+    : '<div class="join-notif-avatar"></div>';
+  div.innerHTML = `
+    <span class="join-notif-icon">👋</span>
+    ${avatarHtml}
+    <span class="join-notif-text"><strong>${esc(name)}</strong> joined</span>
+  `;
+  document.body.appendChild(div);
+  setTimeout(() => { div.remove(); processJoinQueue(); }, 3000);
+}
+
 // ── Confetti ─────────────────────────────────────────────────────────────
 function launchConfetti() {
   const c = el('confetti'), ctx = c.getContext('2d');
@@ -593,6 +690,27 @@ function toggleSettings() {
 el('settingsModal').addEventListener('click', (e) => {
   if (e.target === el('settingsModal')) toggleSettings();
 });
+
+// ── Floating emojis background ───────────────────────────────────────────
+(function initFloatingEmojis() {
+  const container = el('floatEmojis');
+  const emojis = ['🎯','❓','💡','🔥','⭐','🎮','🧠','💬','🏆','🎉','✨','🎶','🐶','🦁','🍕','⚽','🎸','👑'];
+  function spawnEmoji() {
+    const span = document.createElement('span');
+    span.className = 'float-emoji';
+    span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    span.style.left = Math.random() * 100 + '%';
+    span.style.fontSize = (Math.random() * 1.5 + 1) + 'rem';
+    span.style.animationDuration = (Math.random() * 15 + 20) + 's';
+    span.style.animationDelay = Math.random() * 2 + 's';
+    container.appendChild(span);
+    setTimeout(() => span.remove(), 40000);
+  }
+  // Spawn initial batch
+  for (let i = 0; i < 12; i++) setTimeout(() => spawnEmoji(), i * 800);
+  // Keep spawning
+  setInterval(spawnEmoji, 3000);
+})();
 
 // ── PWA Service Worker ───────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {

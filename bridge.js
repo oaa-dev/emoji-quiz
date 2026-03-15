@@ -151,6 +151,13 @@ async function connectTikTok(username) {
       });
     });
 
+    tiktokConnection.on('member', (data) => {
+      const nickname = data.nickname || data.uniqueId || 'someone';
+      const profilePic = data.profilePictureUrl || '';
+      LOG.info(`${nickname} joined the live`);
+      broadcast({ type: 'join', nickname, profilePic });
+    });
+
     tiktokConnection.on('roomUser', (data) => {
       broadcast({ type: 'viewerCount', count: data.viewerCount });
     });
@@ -210,6 +217,28 @@ let roundCorrectUsers = new Set();
 function processGuess(username, nickname, profilePic, guess) {
   if (gameState !== 'puzzle') return;
   if (!guess || guess.length > 100) return;
+
+  // Chat commands
+  const lower = guess.toLowerCase().trim();
+  if (lower === 'skip') {
+    LOG.info(`Skip requested by ${username}`);
+    clearTimeout(roundTimer);
+    clearTimeout(resultsTimer);
+    clearInterval(hintTimer);
+    broadcast({
+      type: 'reveal',
+      answer: currentPuzzle.answer,
+      emojis: currentPuzzle.emojis,
+      skippedBy: nickname || username,
+    });
+    resultsTimer = setTimeout(() => startRound(), 3000);
+    return;
+  }
+  if (lower === 'hint') {
+    LOG.info(`Hint requested by ${username}`);
+    revealHint();
+    return;
+  }
 
   // Already got it right this round — ignore
   if (roundCorrectUsers.has(username)) return;
@@ -391,7 +420,6 @@ function startRound() {
     blanks: getHintBlanks(),
     letterCount: puzzle.answer.replace(/\s/g, '').length,
     wordCount: puzzle.answer.split(' ').length,
-    timeLimit: ROUND_TIME,
   });
 
   // Timer to end round
@@ -430,8 +458,8 @@ wss.on('connection', (ws) => {
     .sort((a, b) => b.score - a.score)
     .slice(0, 20);
 
-  const timeRemaining = gameState === 'puzzle'
-    ? Math.max(0, ROUND_TIME - (Date.now() - roundStartTime) / 1000)
+  const elapsedTime = gameState === 'puzzle'
+    ? Math.floor((Date.now() - roundStartTime) / 1000)
     : 0;
 
   ws.send(JSON.stringify({
@@ -448,8 +476,7 @@ wss.on('connection', (ws) => {
       letterCount: currentPuzzle.answer.replace(/\s/g, '').length,
       wordCount: currentPuzzle.answer.split(' ').length,
     } : null,
-    timeLimit: ROUND_TIME,
-    timeRemaining,
+    elapsedTime,
     recentGuesses: recentGuesses.slice(-8),
     leaderboard: lbArray,
   }));
