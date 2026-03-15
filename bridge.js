@@ -178,8 +178,9 @@ async function connectTikTok(username) {
       connectedUsername = null;
     });
   } catch (err) {
-    LOG.error(`Failed to connect: ${err.message}`);
-    broadcast({ type: 'status', status: 'error', message: err.message });
+    const errMsg = err?.message || err?.toString() || String(err);
+    LOG.error(`Failed to connect: ${errMsg}`);
+    broadcast({ type: 'status', status: 'error', message: errMsg });
     tiktokConnection = null;
   }
 }
